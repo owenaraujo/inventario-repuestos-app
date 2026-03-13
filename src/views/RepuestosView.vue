@@ -70,14 +70,68 @@
     </div>
 
     <!-- Modal (sin cambios) -->
-    <div v-if="dialogVisible" class="modal-overlay">
-      <div class="modal">
-        <h2>{{ editing ? 'Editar repuesto' : 'Nuevo repuesto' }}</h2>
-        <form @submit.prevent="saveRepuesto">
-          <!-- ... campos del formulario ... -->
-        </form>
+    <!-- Modal para crear/editar repuesto -->
+<div v-if="dialogVisible" class="modal-overlay">
+  <div class="modal">
+    <h2>{{ editing ? 'Editar repuesto' : 'Nuevo repuesto' }}</h2>
+    <form @submit.prevent="saveRepuesto">
+      <div class="form-group">
+        <label>Nombre *</label>
+        <input v-model="form.nombre" required />
       </div>
-    </div>
+      <div class="form-group">
+        <label>Descripción</label>
+        <textarea v-model="form.descripcion" rows="3"></textarea>
+      </div>
+      <div class="form-group">
+        <label>Categoría</label>
+        <select v-model="form.categoria_id">
+          <option :value="null">Sin categoría</option>
+          <option v-for="cat in categorias" :key="cat.id" :value="cat.id">{{ cat.nombre }}</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Proveedor</label>
+        <select v-model="form.proveedor_id">
+          <option :value="null">Sin proveedor</option>
+          <option v-for="prov in proveedores" :key="prov.id" :value="prov.id">{{ prov.nombre }}</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group half">
+          <label>Stock</label>
+          <input type="number" v-model="form.stock" min="0" />
+        </div>
+        <div class="form-group half">
+          <label>Stock mínimo</label>
+          <input type="number" v-model="form.stock_minimo" min="1" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group half">
+          <label>Precio compra</label>
+          <input type="number" step="0.01" v-model="form.precio_compra" />
+        </div>
+        <div class="form-group half">
+          <label>Precio venta</label>
+          <input type="number" step="0.01" v-model="form.precio_venta" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Ubicación</label>
+        <input v-model="form.ubicacion" />
+      </div>
+      <div class="form-group">
+        <label>URL imagen</label>
+        <input v-model="form.imagen_url" />
+      </div>
+      <div class="modal-actions">
+        <button type="button" @click="dialogVisible = false" class="btn-secondary">Cancelar</button>
+        <button type="submit" :disabled="saving" class="btn-primary">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
   </div>
 </template>
 
