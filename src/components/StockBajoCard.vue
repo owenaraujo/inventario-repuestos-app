@@ -2,7 +2,7 @@
   <div class="card">
     <div class="card-header">
       <h3>Stock Bajo</h3>
-      <Badge :value="repuestos.length" severity="warning" />
+      <span class="badge">{{ repuestos.length }}</span>
     </div>
     <div class="card-body">
       <ul v-if="repuestos.length">
@@ -16,9 +16,6 @@
 </template>
 
 <script setup>
-import { defineProps } from 'vue'
-import Badge from 'primevue/badge'
-
 defineProps({
   repuestos: {
     type: Array,
@@ -42,6 +39,13 @@ defineProps({
 }
 .card-header h3 {
   margin: 0;
+}
+.badge {
+  background: #ff9800;
+  color: white;
+  border-radius: 50%;
+  padding: 0.25rem 0.6rem;
+  font-size: 0.8rem;
 }
 ul {
   list-style: none;

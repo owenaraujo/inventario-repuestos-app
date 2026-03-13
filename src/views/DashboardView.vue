@@ -4,7 +4,6 @@
     <div class="cards">
       <div class="card" v-for="item in resumen" :key="item.label">
         <div class="card-icon" :style="{ backgroundColor: item.color }">
-          <!-- Aquí podrías usar un icono con emoji o texto -->
           <span>{{ item.icon }}</span>
         </div>
         <div class="card-content">
@@ -14,27 +13,8 @@
       </div>
     </div>
 
-    <div class="stock-bajo">
-      <h2>Stock Bajo</h2>
-      <div v-if="bajoStock.length">
-        <table>
-          <thead>
-            <tr>
-              <th>Repuesto</th>
-              <th>Stock</th>
-              <th>Mínimo</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="item in bajoStock" :key="item.id">
-              <td>{{ item.nombre }}</td>
-              <td>{{ item.stock }}</td>
-              <td>{{ item.stock_minimo }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <p v-else>No hay repuestos con stock bajo.</p>
+    <div class="charts">
+      <StockBajoCard :repuestos="bajoStock" />
     </div>
   </div>
 </template>
@@ -45,6 +25,7 @@ import { getRepuestos, getBajoStock } from '../services/repuestos'
 import { getCategorias } from '../services/categorias'
 import { getProveedores } from '../services/proveedores'
 import { getMovimientos } from '../services/movimientos'
+import StockBajoCard from '../components/StockBajoCard.vue'
 
 const resumen = ref([])
 const bajoStock = ref([])
@@ -114,17 +95,7 @@ onMounted(async () => {
   font-size: 1.5rem;
   font-weight: bold;
 }
-.stock-bajo table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 1rem;
-}
-.stock-bajo th, .stock-bajo td {
-  border: 1px solid #ddd;
-  padding: 8px;
-  text-align: left;
-}
-.stock-bajo th {
-  background-color: #f2f2f2;
+.charts {
+  margin-top: 2rem;
 }
 </style>

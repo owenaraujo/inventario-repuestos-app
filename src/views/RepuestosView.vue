@@ -18,17 +18,17 @@
         </tr>
       </thead>
       <tbody>
-        <tr v-for="repuesto in repuestos" :key="repuesto.id">
-          <td>{{ repuesto.nombre }}</td>
-          <td>{{ repuesto.categoria?.nombre || '-' }}</td>
-          <td>{{ repuesto.proveedor?.nombre || '-' }}</td>
-          <td :class="{ 'stock-bajo': repuesto.stock <= repuesto.stock_minimo }">
-            {{ repuesto.stock }}
+        <tr v-for="rep in repuestos" :key="rep.id">
+          <td>{{ rep.nombre }}</td>
+          <td>{{ rep.categorias?.nombre || '-' }}</td>
+          <td>{{ rep.proveedores?.nombre || '-' }}</td>
+          <td :class="{ 'stock-bajo': rep.stock <= rep.stock_minimo }">
+            {{ rep.stock }}
           </td>
-          <td>{{ formatCurrency(repuesto.precio_venta) }}</td>
+          <td>{{ formatCurrency(rep.precio_venta) }}</td>
           <td>
-            <button @click="editRepuesto(repuesto)" class="btn-edit">Editar</button>
-            <button @click="confirmDelete(repuesto)" class="btn-delete">Eliminar</button>
+            <button @click="editRepuesto(rep)" class="btn-edit">Editar</button>
+            <button @click="confirmDelete(rep)" class="btn-delete">Desactivar</button>
           </td>
         </tr>
       </tbody>
@@ -50,32 +50,36 @@
           <div class="form-group">
             <label>Categoría</label>
             <select v-model="form.categoria_id">
-              <option :value="null">Selecciona</option>
+              <option :value="null">Sin categoría</option>
               <option v-for="cat in categorias" :key="cat.id" :value="cat.id">{{ cat.nombre }}</option>
             </select>
           </div>
           <div class="form-group">
             <label>Proveedor</label>
             <select v-model="form.proveedor_id">
-              <option :value="null">Selecciona</option>
+              <option :value="null">Sin proveedor</option>
               <option v-for="prov in proveedores" :key="prov.id" :value="prov.id">{{ prov.nombre }}</option>
             </select>
           </div>
-          <div class="form-group">
-            <label>Stock</label>
-            <input type="number" v-model="form.stock" min="0" />
+          <div class="form-row">
+            <div class="form-group half">
+              <label>Stock</label>
+              <input type="number" v-model="form.stock" min="0" />
+            </div>
+            <div class="form-group half">
+              <label>Stock mínimo</label>
+              <input type="number" v-model="form.stock_minimo" min="1" />
+            </div>
           </div>
-          <div class="form-group">
-            <label>Stock mínimo</label>
-            <input type="number" v-model="form.stock_minimo" min="1" />
-          </div>
-          <div class="form-group">
-            <label>Precio compra</label>
-            <input type="number" step="0.01" v-model="form.precio_compra" />
-          </div>
-          <div class="form-group">
-            <label>Precio venta</label>
-            <input type="number" step="0.01" v-model="form.precio_venta" />
+          <div class="form-row">
+            <div class="form-group half">
+              <label>Precio compra</label>
+              <input type="number" step="0.01" v-model="form.precio_compra" />
+            </div>
+            <div class="form-group half">
+              <label>Precio venta</label>
+              <input type="number" step="0.01" v-model="form.precio_venta" />
+            </div>
           </div>
           <div class="form-group">
             <label>Ubicación</label>
@@ -108,7 +112,18 @@ const loading = ref(false)
 const saving = ref(false)
 const dialogVisible = ref(false)
 const editing = ref(false)
-const form = ref({})
+const form = ref({
+  nombre: '',
+  descripcion: '',
+  categoria_id: null,
+  proveedor_id: null,
+  stock: 0,
+  stock_minimo: 5,
+  precio_compra: null,
+  precio_venta: null,
+  ubicacion: '',
+  imagen_url: ''
+})
 
 const loadData = async () => {
   loading.value = true
@@ -123,6 +138,7 @@ const loadData = async () => {
     proveedores.value = proveedoresRes.data
   } catch (error) {
     console.error('Error cargando datos:', error)
+    alert('Error al cargar datos')
   } finally {
     loading.value = false
   }
@@ -145,9 +161,21 @@ const openDialog = () => {
   dialogVisible.value = true
 }
 
-const editRepuesto = (repuesto) => {
+const editRepuesto = (rep) => {
   editing.value = true
-  form.value = { ...repuesto }
+  form.value = {
+    id: rep.id,
+    nombre: rep.nombre,
+    descripcion: rep.descripcion,
+    categoria_id: rep.categoria_id,
+    proveedor_id: rep.proveedor_id,
+    stock: rep.stock,
+    stock_minimo: rep.stock_minimo,
+    precio_compra: rep.precio_compra,
+    precio_venta: rep.precio_venta,
+    ubicacion: rep.ubicacion,
+    imagen_url: rep.imagen_url
+  }
   dialogVisible.value = true
 }
 
@@ -155,20 +183,7 @@ const saveRepuesto = async () => {
   saving.value = true
   try {
     if (editing.value) {
-      console.log(form.value);
-      
-      const newForm ={
-         id: form.value.id,
-  nombre: form.value.nombre,
-  descripcion: form.value.descripcion,
-  stock: form.value.stock,
-  stock_minimo: form.value.stock_minimo,
-  precio_compra: form.value.precio_compra,
-  precio_venta: form.value.precio_venta,
-  ubicacion: form.value.ubicacion,
-  imagen_url: form.value.imagen_url,
-      }
-      await updateRepuesto(form.value.id, newForm)
+      await updateRepuesto(form.value.id, form.value)
       alert('Repuesto actualizado')
     } else {
       await createRepuesto(form.value)
@@ -184,17 +199,14 @@ const saveRepuesto = async () => {
   }
 }
 
-const confirmDelete = (repuesto) => {
-  if (confirm(`¿Estás seguro de eliminar ${repuesto.nombre}?`)) {
-    deleteRepuesto(repuesto.id)
+const confirmDelete = (rep) => {
+  if (confirm(`¿Desactivar el repuesto "${rep.nombre}"?`)) {
+    deleteRepuesto(rep.id)
       .then(() => {
-        alert('Repuesto eliminado')
+        alert('Repuesto desactivado')
         loadData()
       })
-      .catch((error) => {
-        console.error('Error eliminando:', error)
-        alert('Error al eliminar')
-      })
+      .catch(() => alert('Error al desactivar'))
   }
 }
 
@@ -207,114 +219,23 @@ onMounted(loadData)
 </script>
 
 <style scoped>
-.repuestos {
-  padding: 2rem;
-}
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-}
-.btn-primary {
-  background-color: #42A5F5;
-  color: white;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  cursor: pointer;
-}
-.btn-primary:hover {
-  background-color: #1E88E5;
-}
-.btn-secondary {
-  background-color: #ccc;
-  color: black;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  cursor: pointer;
-}
-.btn-secondary:hover {
-  background-color: #b3b3b3;
-}
-.btn-edit {
-  background-color: #66BB6A;
-  color: white;
-  border: none;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  cursor: pointer;
-  margin-right: 0.5rem;
-}
-.btn-edit:hover {
-  background-color: #4CAF50;
-}
-.btn-delete {
-  background-color: #EF5350;
-  color: white;
-  border: none;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  cursor: pointer;
-}
-.btn-delete:hover {
-  background-color: #E53935;
-}
-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-th, td {
-  border: 1px solid #ddd;
-  padding: 8px;
-  text-align: left;
-}
-th {
-  background-color: #f2f2f2;
-}
-.stock-bajo {
-  background-color: #ffcdd2;
-  font-weight: bold;
-}
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0,0,0,0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-.modal {
-  background: white;
-  padding: 2rem;
-  border-radius: 8px;
-  max-width: 500px;
-  width: 90%;
-  max-height: 80vh;
-  overflow-y: auto;
-}
-.form-group {
-  margin-bottom: 1rem;
-}
-label {
-  display: block;
-  margin-bottom: 0.25rem;
-  font-weight: 500;
-}
-input, select, textarea {
-  width: 100%;
-  padding: 0.5rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-}
-.modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.5rem;
-  margin-top: 1rem;
-}
+.repuestos { padding: 2rem; }
+.header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+.btn-primary { background: #42A5F5; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; }
+.btn-primary:hover { background: #1E88E5; }
+.btn-secondary { background: #ccc; color: black; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; }
+.btn-edit { background: #66BB6A; color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 4px; margin-right: 0.5rem; cursor: pointer; }
+.btn-delete { background: #EF5350; color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 4px; cursor: pointer; }
+table { width: 100%; border-collapse: collapse; }
+th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+th { background: #f2f2f2; }
+.stock-bajo { background-color: #ffcdd2; font-weight: bold; }
+.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; }
+.modal { background: white; padding: 2rem; border-radius: 8px; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto; }
+.form-group { margin-bottom: 1rem; }
+.form-row { display: flex; gap: 1rem; }
+.form-row .half { flex: 1; }
+label { display: block; margin-bottom: 0.25rem; font-weight: 500; }
+input, select, textarea { width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1rem; }
 </style>

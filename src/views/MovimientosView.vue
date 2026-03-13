@@ -5,7 +5,8 @@
       <button @click="openDialog" class="btn-primary">Nuevo movimiento</button>
     </div>
 
-    <table>
+    <div v-if="loading">Cargando...</div>
+    <table v-else>
       <thead>
         <tr>
           <th>Fecha</th>
@@ -13,25 +14,22 @@
           <th>Tipo</th>
           <th>Cantidad</th>
           <th>Motivo</th>
-          <th>Usuario</th>
-          <th>Acciones</th>
         </tr>
       </thead>
       <tbody>
         <tr v-for="mov in movimientos" :key="mov.id">
-          <td>{{ formatDate(mov.created_at) }}</td>
-          <td>{{ mov.repuestos?.nombre || '-' }}</td>
+          <td>{{ new Date(mov.created_at).toLocaleString() }}</td>
           <td>
-            <span :class="['badge', mov.tipo === 'entrada' ? 'badge-entrada' : 'badge-salida']">
+            <span v-if="mov.repuestos">{{ mov.repuestos.nombre }}</span>
+            <span v-else class="deleted">❌ Repuesto eliminado</span>
+          </td>
+          <td>
+            <span :class="mov.tipo === 'entrada' ? 'entrada' : 'salida'">
               {{ mov.tipo === 'entrada' ? 'Entrada' : 'Salida' }}
             </span>
           </td>
           <td>{{ mov.cantidad }}</td>
           <td>{{ mov.motivo || '-' }}</td>
-          <td>{{ mov.usuario_id?.substring(0,8) || '-' }}</td>
-          <td>
-            <button @click="confirmDelete(mov)" class="btn-delete">Eliminar</button>
-          </td>
         </tr>
       </tbody>
     </table>
@@ -44,9 +42,8 @@
           <div class="form-group">
             <label>Repuesto *</label>
             <select v-model="form.repuesto_id" required>
-              <option value="" disabled selected>Selecciona un repuesto</option>
               <option v-for="rep in repuestos" :key="rep.id" :value="rep.id">
-                {{ rep.nombre }} (Stock actual: {{ rep.stock }})
+                {{ rep.nombre }} (Stock: {{ rep.stock }})
               </option>
             </select>
           </div>
@@ -77,21 +74,23 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { getMovimientos, createMovimiento, deleteMovimiento } from '../services/movimientos'
+import { getMovimientos, createMovimiento } from '../services/movimientos'
 import { getRepuestos } from '../services/repuestos'
 
 const movimientos = ref([])
 const repuestos = ref([])
-const dialogVisible = ref(false)
+const loading = ref(false)
 const saving = ref(false)
+const dialogVisible = ref(false)
 const form = ref({
-  repuesto_id: '',
+  repuesto_id: null,
   tipo: 'entrada',
   cantidad: 1,
   motivo: ''
 })
 
 const loadData = async () => {
+  loading.value = true
   try {
     const [movRes, repRes] = await Promise.all([
       getMovimientos(),
@@ -100,14 +99,16 @@ const loadData = async () => {
     movimientos.value = movRes.data
     repuestos.value = repRes.data
   } catch (error) {
-    console.error('Error cargando datos:', error)
-    alert('Error al cargar los movimientos')
+    console.error('Error cargando movimientos:', error)
+    alert('Error al cargar movimientos')
+  } finally {
+    loading.value = false
   }
 }
 
 const openDialog = () => {
   form.value = {
-    repuesto_id: '',
+    repuesto_id: null,
     tipo: 'entrada',
     cantidad: 1,
     motivo: ''
@@ -116,170 +117,39 @@ const openDialog = () => {
 }
 
 const saveMovimiento = async () => {
-  // Validar que la cantidad no exceda el stock si es salida
-  if (form.value.tipo === 'salida') {
-    const repuesto = repuestos.value.find(r => r.id === form.value.repuesto_id)
-    if (repuesto && repuesto.stock < form.value.cantidad) {
-      alert('Stock insuficiente para esta salida')
-      return
-    }
-  }
-
   saving.value = true
   try {
     await createMovimiento(form.value)
-    alert('Movimiento registrado correctamente')
+    alert('Movimiento registrado')
     dialogVisible.value = false
     loadData()
   } catch (error) {
     console.error('Error guardando movimiento:', error)
-    alert(error.response?.data?.error || 'Error al guardar el movimiento')
+    alert(error.response?.data?.error || 'Error al guardar')
   } finally {
     saving.value = false
   }
-}
-
-const confirmDelete = (mov) => {
-  if (confirm('¿Estás seguro de eliminar este movimiento? Esta acción no se puede deshacer.')) {
-    deleteMovimiento(mov.id)
-      .then(() => {
-        alert('Movimiento eliminado')
-        loadData()
-      })
-      .catch((error) => {
-        console.error('Error eliminando movimiento:', error)
-        alert('Error al eliminar el movimiento')
-      })
-  }
-}
-
-const formatDate = (dateString) => {
-  if (!dateString) return '-'
-  const date = new Date(dateString)
-  return date.toLocaleString('es-ES', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
 }
 
 onMounted(loadData)
 </script>
 
 <style scoped>
-.movimientos {
-  padding: 2rem;
-}
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-}
-.btn-primary {
-  background-color: #42A5F5;
-  color: white;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  cursor: pointer;
-}
-.btn-primary:hover {
-  background-color: #1E88E5;
-}
-.btn-primary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-.btn-secondary {
-  background-color: #ccc;
-  color: black;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  cursor: pointer;
-}
-.btn-secondary:hover {
-  background-color: #b3b3b3;
-}
-.btn-delete {
-  background-color: #EF5350;
-  color: white;
-  border: none;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  cursor: pointer;
-}
-.btn-delete:hover {
-  background-color: #E53935;
-}
-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-th, td {
-  border: 1px solid #ddd;
-  padding: 8px;
-  text-align: left;
-}
-th {
-  background-color: #f2f2f2;
-}
-.badge {
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  font-size: 0.85rem;
-  font-weight: bold;
-  color: white;
-}
-.badge-entrada {
-  background-color: #4CAF50;
-}
-.badge-salida {
-  background-color: #f44336;
-}
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0,0,0,0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-}
-.modal {
-  background: white;
-  padding: 2rem;
-  border-radius: 8px;
-  max-width: 500px;
-  width: 90%;
-  max-height: 80vh;
-  overflow-y: auto;
-}
-.form-group {
-  margin-bottom: 1rem;
-}
-label {
-  display: block;
-  margin-bottom: 0.25rem;
-  font-weight: 500;
-}
-input, select, textarea {
-  width: 100%;
-  padding: 0.5rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  box-sizing: border-box;
-}
-.modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.5rem;
-  margin-top: 1rem;
-}
+.movimientos { padding: 2rem; }
+.header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+.btn-primary { background: #42A5F5; color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; }
+.btn-primary:hover { background: #1E88E5; }
+.btn-secondary { background: #ccc; color: black; border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; }
+table { width: 100%; border-collapse: collapse; }
+th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+th { background: #f2f2f2; }
+.entrada { color: green; font-weight: bold; }
+.salida { color: red; font-weight: bold; }
+.deleted { color: gray; font-style: italic; }
+.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; }
+.modal { background: white; padding: 2rem; border-radius: 8px; max-width: 400px; width: 90%; }
+.form-group { margin-bottom: 1rem; }
+label { display: block; margin-bottom: 0.25rem; font-weight: 500; }
+input, select { width: 100%; padding: 0.5rem; border: 1px solid #ccc; border-radius: 4px; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1rem; }
 </style>
