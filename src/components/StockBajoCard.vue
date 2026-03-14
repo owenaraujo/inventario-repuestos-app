@@ -5,14 +5,28 @@
       <span class="badge">{{ repuestos.length }}</span>
     </div>
     <div class="card-body">
-      <ul v-if="repuestos.length">
-        <li v-for="item in repuestos" :key="item.id">
-          {{ item.nombre }} - Stock: {{ item.stock }} / Mínimo: {{ item.stock_minimo }}
-        </li>
-      </ul>
-      <p v-else>No hay repuestos con stock bajo.</p>
+     
+
+      <!-- <p v-else>No hay repuestos con stock bajo.</p> -->
     </div>
   </div>
+   <table v-if="repuestos.length">
+<thead>
+  <tr>
+    <th>repuesto</th>
+    <th>stock</th>
+    <th>stock minimo</th>
+  </tr>
+</thead>
+<tbody>
+
+  <tr v-for="item in repuestos" :key="item.id">
+    <td>{{ item.nombre }}-{{ item.categorias.nombre }}</td>
+    <td>{{ item.stock }}</td>
+    <td>{{ item. stock_minimo}}</td>
+  </tr>
+</tbody>
+      </table>
 </template>
 
 <script setup>
@@ -59,4 +73,7 @@ li {
 li:last-child {
   border-bottom: none;
 }
+table { width: 100%; border-collapse: collapse; margin-top: 20px;}
+th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+th { background: #f2f2f2; }
 </style>

@@ -104,7 +104,7 @@
         </div>
         <div class="form-group half">
           <label>Stock mínimo</label>
-          <input type="number" v-model="form.stock_minimo" min="1" />
+          <input type="number" v-model="form.stock_minimo" min="0" />
         </div>
       </div>
       <div class="form-row">
@@ -154,7 +154,7 @@ const form = ref({
   categoria_id: null,
   proveedor_id: null,
   stock: 0,
-  stock_minimo: 5,
+  stock_minimo: 0,
   precio_compra: null,
   precio_venta: null,
   ubicacion: '',
