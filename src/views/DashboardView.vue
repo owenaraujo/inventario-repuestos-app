@@ -21,7 +21,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { getRepuestos, getBajoStock } from '../services/repuestos'
+import { countRepuestos, getBajoStock } from '../services/repuestos'
 import { getCategorias } from '../services/categorias'
 import { getProveedores } from '../services/proveedores'
 import { getMovimientos } from '../services/movimientos'
@@ -33,7 +33,8 @@ const bajoStock = ref([])
 onMounted(async () => {
   try {
     const [repuestosRes, categoriasRes, proveedoresRes, movimientosRes, bajoStockRes] = await Promise.all([
-      getRepuestos(),
+      
+      countRepuestos(),
       getCategorias(),
       getProveedores(),
       getMovimientos(),
@@ -41,7 +42,7 @@ onMounted(async () => {
     ])
 
     resumen.value = [
-      { label: 'Repuestos', value: repuestosRes.data.length, icon: '📦', color: '#42A5F5' },
+      { label: 'Repuestos', value: repuestosRes.data.count, icon: '📦', color: '#42A5F5' },
       { label: 'Categorías', value: categoriasRes.data.length, icon: '🏷️', color: '#66BB6A' },
       { label: 'Proveedores', value: proveedoresRes.data.length, icon: '🚚', color: '#FFA726' },
       { label: 'Movimientos', value: movimientosRes.data.length, icon: '📋', color: '#AB47BC' }

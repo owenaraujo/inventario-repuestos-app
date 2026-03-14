@@ -14,3 +14,4 @@ export const createRepuesto = (data) => api.post('/repuestos', data)
 export const updateRepuesto = (id, data) => api.put(`/repuestos/${id}`, data)
 export const deleteRepuesto = (id) => api.delete(`/repuestos/${id}`)
 export const getBajoStock = () => api.get('/repuestos/bajo-stock')
+export const countRepuestos = () => api.get('/repuestos/count');
