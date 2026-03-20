@@ -207,7 +207,7 @@ const openDialog = () => {
     categoria_id: null,
     proveedor_id: null,
     stock: 0,
-    stock_minimo: 5,
+    stock_minimo: 0,
     precio_compra: null,
     precio_venta: null,
     ubicacion: '',
